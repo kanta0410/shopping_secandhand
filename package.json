@@ -7,7 +7,11 @@
     "dev": "wrangler dev",
     "deploy": "wrangler deploy",
     "typecheck": "tsc --noEmit",
-    "cf-typegen": "wrangler types"
+    "cf-typegen": "wrangler types",
+    "probe:mercari": "node scripts/probe.mjs mercari",
+    "probe:sites": "node scripts/probe.mjs sites",
+    "probe:books": "node scripts/probe.mjs books",
+    "probe:html": "node scripts/probe.mjs html"
   },
   "dependencies": {
     "hono": "^4.13.7"

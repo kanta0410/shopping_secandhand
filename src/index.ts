@@ -2,6 +2,7 @@ import { Hono } from "hono";
 import { buildDeepLinks } from "./deeplinks";
 import { percentile } from "./normalize";
 import { ALL_SOURCE_IDS, PROVIDERS, fanOut } from "./providers";
+import { mercariRawSearch } from "./providers/mercari";
 import type { ConditionRank, Env, SearchQuery, SearchResponse, SourceId } from "./types";
 
 const app = new Hono<{ Bindings: Env }>();
@@ -116,6 +117,35 @@ app.get("/api/search", async (c) => {
   }
 
   return c.json(payload);
+});
+
+/**
+ * メルカリ内部APIの生レスポンスをそのまま覗く診断用。
+ * 仕様変更で壊れた時に「署名で落ちているのか / 形状が変わったのか」を切り分けるためにある。
+ * ENABLE_MERCARI=1 の時だけ有効。
+ */
+app.get("/api/debug/mercari", async (c) => {
+  if (c.env.ENABLE_MERCARI !== "1") return c.json({ error: "ENABLE_MERCARI=0 のため無効" }, 403);
+  const keyword = (c.req.query("q") ?? "").trim();
+  if (!keyword) return c.json({ error: "q は必須です" }, 400);
+  try {
+    const { status, body } = await mercariRawSearch({ keyword, limit: 3 });
+    let topKeys: string[] = [];
+    let firstItemKeys: string[] = [];
+    try {
+      const j = JSON.parse(body) as Record<string, unknown>;
+      topKeys = Object.keys(j);
+      const items = (j.items ?? j.data ?? j.results) as unknown;
+      if (Array.isArray(items) && items[0] && typeof items[0] === "object") {
+        firstItemKeys = Object.keys(items[0] as object);
+      }
+    } catch {
+      /* JSONでないなら生body側で判断する */
+    }
+    return c.json({ status, topKeys, firstItemKeys, bodyHead: body.slice(0, 2000) });
+  } catch (e) {
+    return c.json({ error: e instanceof Error ? e.message : String(e) }, 500);
+  }
 });
 
 app.get("/api/health", (c) => c.json({ ok: true, ts: new Date().toISOString() }));
