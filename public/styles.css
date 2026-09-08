@@ -173,3 +173,42 @@ a { color: var(--accent-2); }
   .price { grid-column: 2; text-align: left; padding: 0; }
   input[type="number"] { width: 90px; }
 }
+
+/* ===== 本ランキング ===== */
+textarea {
+  flex: 1 1 380px;
+  background: var(--panel-2);
+  border: 1px solid var(--border);
+  color: var(--text);
+  border-radius: 8px;
+  padding: 11px 13px;
+  font-size: 15px;
+  font-family: inherit;
+  resize: vertical;
+}
+textarea:focus { outline: 2px solid var(--accent-2); outline-offset: 1px; }
+
+.deal { background: var(--panel); border: 1px solid var(--border); border-radius: var(--radius); padding: 14px; }
+.deal.top { border-color: var(--accent); }
+.deal-head { display: grid; grid-template-columns: 64px 1fr auto; gap: 14px; align-items: start; }
+.deal-head img { width: 64px; height: 92px; object-fit: cover; border-radius: 4px; background: var(--panel-2); }
+.deal-head .noimg { width: 64px; height: 92px; border-radius: 4px; background: var(--panel-2); display: grid; place-items: center; color: var(--muted); font-size: 10px; }
+.deal h3 { margin: 0 0 4px; font-size: 16px; }
+.deal .byline { font-size: 12px; color: var(--muted); margin: 0 0 8px; }
+.deal-metrics { display: flex; flex-wrap: wrap; gap: 14px; margin-top: 6px; }
+.metric .k { font-size: 10px; color: var(--muted); letter-spacing: .04em; }
+.metric .v { font-size: 17px; font-weight: 700; }
+.metric .v.good { color: var(--good); }
+.metric .v.hl { color: var(--accent); }
+.score { text-align: right; }
+.score .n { font-size: 30px; font-weight: 800; color: var(--accent); line-height: 1; }
+.score .l { font-size: 10px; color: var(--muted); }
+.deal-list { margin-top: 12px; border-top: 1px solid var(--border); padding-top: 10px; display: none; }
+.deal-list.open { display: block; }
+.deal-row { display: flex; gap: 10px; align-items: center; padding: 5px 0; font-size: 13px; text-decoration: none; color: inherit; border-bottom: 1px solid rgba(255,255,255,.04); }
+.deal-row:hover { color: var(--accent-2); }
+.deal-row .p { font-weight: 700; min-width: 78px; text-align: right; }
+.deal-row .t { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.toggle { background: none; border: none; color: var(--accent-2); font-size: 12px; padding: 6px 0 0; cursor: pointer; font-weight: 600; }
+.srcline { font-size: 11px; color: var(--muted); margin-top: 6px; }
+.srcline .err { color: var(--bad); }
