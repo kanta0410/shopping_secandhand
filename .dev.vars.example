@@ -1,0 +1,8 @@
+# ローカル開発用。`.dev.vars` にコピーして値を入れる（.dev.vars は .gitignore 済み）
+# 楽天ウェブサービス: https://webservice.rakuten.co.jp/ でアプリID発行（無料・即時）
+RAKUTEN_APP_ID=
+# Yahoo!デベロッパーネットワーク: https://e.developer.yahoo.co.jp/register でClientID発行（無料）
+YAHOO_CLIENT_ID=
+# メルカリ内部APIを使う場合のみ 1（規約グレー・自己責任）
+ENABLE_MERCARI=0
+CACHE_TTL_SECONDS=300

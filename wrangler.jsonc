@@ -1,0 +1,20 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "chuko-hunter",
+  "main": "src/index.ts",
+  "compatibility_date": "2025-09-01",
+  "compatibility_flags": ["nodejs_compat"],
+  "assets": {
+    "directory": "./public",
+    "binding": "ASSETS",
+    "not_found_handling": "single-page-application"
+  },
+  "observability": { "enabled": true },
+  "vars": {
+    // メルカリは公式APIが存在しない。内部エンドポイントを叩くため規約リスクは自己責任。
+    // 使う場合は "1" に変更（または `wrangler secret` ではなく vars で管理）。
+    "ENABLE_MERCARI": "0",
+    "CACHE_TTL_SECONDS": "300"
+  }
+  // シークレットは `wrangler secret put RAKUTEN_APP_ID` / `YAHOO_CLIENT_ID` で登録する
+}

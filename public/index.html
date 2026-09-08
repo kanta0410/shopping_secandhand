@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>中古ハンター — 中古品を横断して安い順に叩き出す</title>
+<meta name="description" content="メルカリ・Yahoo!ショッピング・楽天・ラクマ・ヤフオク・駿河屋を横断し、中古品を実質価格の安い順に一覧化する。" />
+<link rel="stylesheet" href="/styles.css" />
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><text y='26' font-size='26'>🔎</text></svg>" />
+</head>
+<body>
+<header class="topbar">
+  <div class="wrap">
+    <h1>🔎 中古ハンター</h1>
+    <p class="tagline">中古を横断検索して<strong>実質価格（本体＋送料）の安い順</strong>に並べる。状態も一覧で見る。</p>
+  </div>
+</header>
+
+<main class="wrap">
+  <form id="search-form" class="panel search">
+    <div class="row main-row">
+      <input id="q" name="q" type="search" placeholder="例: 金持ち父さん貧乏父さん / RTX 3060 / iPhone 13 128GB" autocomplete="off" required />
+      <button id="submit" type="submit">検索</button>
+    </div>
+    <div class="row filters">
+      <label>除外語 <input id="exclude" type="text" placeholder="ジャンク 部品取り" /></label>
+      <label>下限 <input id="minPrice" type="number" min="0" step="100" placeholder="0" /></label>
+      <label>上限 <input id="maxPrice" type="number" min="0" step="100" placeholder="上限なし" /></label>
+      <label>状態
+        <select id="maxCondition">
+          <option value="0">すべて</option>
+          <option value="1">新品・未使用のみ</option>
+          <option value="2">未使用に近い 以上</option>
+          <option value="3">目立った傷なし 以上</option>
+          <option value="4">やや傷あり 以上</option>
+          <option value="5">傷あり 以上</option>
+        </select>
+      </label>
+      <label>取得数/サイト
+        <select id="limit">
+          <option value="30">30</option>
+          <option value="50" selected>50</option>
+          <option value="100">100</option>
+        </select>
+      </label>
+      <label class="check"><input id="strict" type="checkbox" checked /> タイトル完全一致フィルタ</label>
+    </div>
+    <div id="source-toggles" class="row sources"></div>
+  </form>
+
+  <div id="setup" class="panel setup" hidden></div>
+
+  <section id="stats" class="panel stats" hidden></section>
+
+  <section id="deeplinks" class="panel deeplinks" hidden>
+    <h2>APIが無いサイトはワンクリックで横断</h2>
+    <p class="muted">下のボタンは「中古・価格が安い順」に設定済みの検索結果を新しいタブで開きます。</p>
+    <div id="deeplink-list" class="chips"></div>
+    <button id="open-all" type="button" class="ghost">主要4サイトを一括で開く</button>
+  </section>
+
+  <section id="results-section" hidden>
+    <div class="results-head">
+      <h2>取得結果 <span id="result-count" class="muted"></span></h2>
+      <div class="sortbar">
+        <label>並び替え
+          <select id="sort">
+            <option value="effective">実質価格が安い順</option>
+            <option value="price">本体価格が安い順</option>
+            <option value="net">ポイント差引後が安い順</option>
+            <option value="condition">状態が良い順</option>
+          </select>
+        </label>
+      </div>
+    </div>
+    <div id="results" class="results"></div>
+  </section>
+
+  <div id="empty" class="panel empty" hidden></div>
+</main>
+
+<footer class="wrap footer">
+  <p class="muted">
+    価格・在庫は取得時点のもの。購入前に必ず出品ページで確認してください。
+    送料が「不明」の行は本体価格のみで並んでいるため、実際は順位が入れ替わることがあります。
+  </p>
+</footer>
+
+<script src="/app.js"></script>
+</body>
+</html>
