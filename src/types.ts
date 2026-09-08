@@ -91,3 +91,49 @@ export interface Env {
   ENABLE_MERCARI?: string;
   CACHE_TTL_SECONDS?: string;
 }
+
+/* ===== 書籍モード（中古本の横断リサーチ／ランキング用） ===== */
+
+/** 書名から解決した1冊の書誌。ISBNが取れると各中古サイトを正確に叩けるようになる */
+export interface BookRef {
+  isbn13: string | null;
+  isbn10: string | null;
+  title: string;
+  author: string | null;
+  publisher: string | null;
+  pubdate: string | null;
+  coverUrl: string | null;
+  /** 定価（円）。取れない場合 null。中古の「お得度」の分母になる */
+  listPrice: number | null;
+  /** 書誌の取得元（ndl / rakuten_books / openbd） */
+  via: string;
+}
+
+/** 中古本1冊についての横断結果＋お得度スコア */
+export interface BookDeal {
+  book: BookRef;
+  /** 実質価格が最安の出品 */
+  best: Listing | null;
+  listings: Listing[];
+  /** 定価比の割引率(%)。定価不明なら null */
+  discountPct: number | null;
+  /** 出品数。供給の厚み＝値崩れしやすさの指標 */
+  supply: number;
+  /** 実質価格の中央値 */
+  median: number | null;
+  /** 最安が中央値からどれだけ乖離しているか(%)。取りこぼし出品を見つける指標 */
+  gapPct: number | null;
+  sources: SourceResult[];
+}
+
+/** 書籍系スクレイパ／APIが実装すべきインターフェース */
+export interface BookProvider {
+  id: string;
+  label: string;
+  /** ISBN もしくはキーワードで中古在庫を引く */
+  search(input: { keyword: string; isbn?: string | null; limit: number }, env: Env): Promise<Listing[]>;
+  /** 設定不足などで使えない理由。null なら利用可 */
+  skipReason(env: Env): string | null;
+  /** 診断用: 実際に叩くURL（probe が生HTMLを取るのに使う） */
+  probeUrl(input: { keyword: string; isbn?: string | null }): string;
+}
