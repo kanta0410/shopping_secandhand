@@ -3,6 +3,9 @@ import { buildDeepLinks } from "./deeplinks";
 import { percentile } from "./normalize";
 import { ALL_SOURCE_IDS, PROVIDERS, fanOut } from "./providers";
 import { mercariRawSearch } from "./providers/mercari";
+import { resolveBooks } from "./books/isbn";
+import { buildDeal, rankDeals, scoreDeal, type RankMode } from "./books/rank";
+import { fanOutBooks } from "./providers/books";
 import type { ConditionRank, Env, SearchQuery, SearchResponse, SourceId } from "./types";
 
 const app = new Hono<{ Bindings: Env }>();
@@ -146,6 +149,75 @@ app.get("/api/debug/mercari", async (c) => {
   } catch (e) {
     return c.json({ error: e instanceof Error ? e.message : String(e) }, 500);
   }
+});
+
+/**
+ * 中古本ランキング。書名/ISBN → 書誌解決 → 中古サイト横断 → お得度順に並べる。
+ *
+ * 1冊ごとに複数サイトを叩くので、冊数 × サイト数のリクエストになる。
+ * 相手サイトに迷惑をかけないよう、冊数は10冊、同時実行は3冊ずつに制限している。
+ */
+app.get("/api/books", async (c) => {
+  const t0 = Date.now();
+  const raw = (c.req.query("q") ?? "").trim();
+  if (!raw) return c.json({ error: "q（書名またはISBN）は必須です" }, 400);
+
+  const titles = raw
+    .split(/[\n,、]+/)
+    .map((s) => s.trim())
+    .filter(Boolean)
+    .slice(0, 10);
+  if (titles.length === 0) return c.json({ error: "有効な書名がありません" }, 400);
+
+  const modeParam = c.req.query("mode") ?? "discount";
+  const mode: RankMode = (["discount", "cheapest", "gap", "supply"] as const).includes(modeParam as RankMode)
+    ? (modeParam as RankMode)
+    : "discount";
+  const limit = Math.min(60, Math.max(1, Number.parseInt(c.req.query("limit") ?? "20", 10) || 20));
+
+  const warnings: string[] = [];
+
+  const handleTitle = async (title: string) => {
+    const books = await resolveBooks(title, c.env, 1);
+    // 書誌が引けなくても中古検索自体は続行する（絶版・同人・洋書など書誌APIに無い本があるため）
+    const book = books[0] ?? {
+      isbn13: null,
+      isbn10: null,
+      title,
+      author: null,
+      publisher: null,
+      pubdate: null,
+      coverUrl: null,
+      listPrice: null,
+      via: "未解決",
+    };
+    const { listings, sources } = await fanOutBooks({ keyword: title, isbn: book.isbn13, limit }, c.env);
+    for (const s of sources) {
+      if (s.error) warnings.push(`${s.sourceLabel}: ${s.error}`);
+    }
+    const deal = buildDeal(book, listings, sources);
+    return { ...deal, score: scoreDeal(deal) };
+  };
+
+  // 3冊ずつ処理して同時接続数を抑える
+  const results: Awaited<ReturnType<typeof handleTitle>>[] = [];
+  for (let i = 0; i < titles.length; i += 3) {
+    const chunk = titles.slice(i, i + 3);
+    const settled = await Promise.allSettled(chunk.map(handleTitle));
+    for (const r of settled) {
+      if (r.status === "fulfilled") results.push(r.value);
+      else warnings.push(`検索失敗: ${r.reason instanceof Error ? r.reason.message : String(r.reason)}`);
+    }
+  }
+
+  const ranked = rankDeals(results, mode).map((d) => ({ ...d, score: scoreDeal(d) }));
+
+  return c.json({
+    mode,
+    deals: ranked,
+    warnings: [...new Set(warnings)].slice(0, 10),
+    tookMs: Date.now() - t0,
+  });
 });
 
 app.get("/api/health", (c) => c.json({ ok: true, ts: new Date().toISOString() }));

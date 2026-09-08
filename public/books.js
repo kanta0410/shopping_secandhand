@@ -9,8 +9,11 @@ function metric(k, v, cls) {
 
 function renderDeal(d, i) {
   const b = d.book || {};
+  // 書誌APIの書影URLは存在しないことがある（NDLのサムネは404を返す場合がある）ので、
+  // 読み込み失敗時はプレースホルダに差し替えて見た目を壊さない
   const cover = b.coverUrl
-    ? `<img src="${esc(b.coverUrl)}" alt="" loading="lazy" referrerpolicy="no-referrer" />`
+    ? `<img src="${esc(b.coverUrl)}" alt="" loading="lazy" referrerpolicy="no-referrer"
+         onerror="this.outerHTML='&lt;div class=&quot;noimg&quot;&gt;no cover&lt;/div&gt;'" />`
     : `<div class="noimg">no cover</div>`;
   const best = d.best;
 
@@ -46,8 +49,8 @@ function renderDeal(d, i) {
         }${b.via ? ` <span class="muted">(書誌: ${esc(b.via)})</span>` : ""}</p>
         <div class="deal-metrics">
           ${metric("中古最安（実質）", best ? yen(best.effectivePrice) : "—", "hl")}
-          ${metric("定価", b.listPrice ? yen(b.listPrice) : "—")}
-          ${metric("割引率", d.discountPct != null ? `-${d.discountPct}%` : "—", d.discountPct >= 50 ? "good" : "")}
+          ${metric("新品価格", b.listPrice ? yen(b.listPrice) : "—")}
+          ${metric("新品比", d.discountPct != null ? `-${d.discountPct}%` : "—", d.discountPct >= 50 ? "good" : "")}
           ${metric("中央値", d.median != null ? yen(d.median) : "—")}
           ${metric("相場乖離", d.gapPct != null ? `-${d.gapPct}%` : "—", d.gapPct >= 40 ? "good" : "")}
           ${metric("出品数", String(d.supply ?? 0))}

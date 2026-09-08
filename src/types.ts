@@ -1,4 +1,12 @@
-export type SourceId = "rakuten" | "yahoo_shopping" | "mercari";
+export type SourceId =
+  | "rakuten"
+  | "yahoo_shopping"
+  | "mercari"
+  // 書籍モードのスクレイピング系。Listing を共通で扱えるよう SourceId 側を広げている
+  | "surugaya"
+  | "kosho"
+  | "bookoff"
+  | "rakuten_books";
 
 /** 各サイトのコンディション表記を 6 段階に正規化したもの（数字が小さいほど良い） */
 export type ConditionRank = 1 | 2 | 3 | 4 | 5 | 6 | 0;

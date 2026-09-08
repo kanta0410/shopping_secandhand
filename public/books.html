@@ -12,7 +12,7 @@
 <header class="topbar">
   <div class="wrap">
     <h1>📚 中古本ランキング</h1>
-    <p class="tagline">販売中の中古本を全サイト横断で集め、<strong>定価比の割引率</strong>と<strong>相場からの乖離</strong>でランキングする。</p>
+    <p class="tagline">販売中の中古本を全サイト横断で集め、<strong>新品価格比の割引率</strong>と<strong>相場からの乖離</strong>でランキングする。</p>
     <p class="tagline"><a href="/">← 商品検索（本以外はこちら）</a></p>
   </div>
 </header>
@@ -26,7 +26,7 @@
     <div class="row filters">
       <label>ランキング基準
         <select id="mode">
-          <option value="discount">定価比の割引率が大きい順</option>
+          <option value="discount">新品価格比の割引率が大きい順</option>
           <option value="gap">相場からの乖離が大きい順（掘り出し物）</option>
           <option value="cheapest">最安値が安い順</option>
           <option value="supply">出品数が多い順（値崩れしやすい）</option>
@@ -52,7 +52,7 @@
 
 <footer class="wrap footer">
   <p class="muted">
-    定価は書誌API（楽天ブックス / openBD）由来。取得できない本は割引率を「—」と表示し、推定値で埋めません。
+    「新品価格」は書誌API（楽天ブックス / openBD）由来で、<strong>定価とは限りません</strong>（新品が値引き中ならその価格になり、割引率は控えめに出ます）。取得できない本は「—」と表示し、推定値で埋めません。
     送料不明の出品は本体価格のみで比較しているため、実際の総額では順位が入れ替わることがあります。
   </p>
 </footer>
