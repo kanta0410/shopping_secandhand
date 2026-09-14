@@ -50,10 +50,15 @@ function isValidIsbn13(s: string): boolean {
   return isbn13CheckDigit(s.slice(0, 12)) === s[12];
 }
 
-/** ISBN-10 → ISBN-13。形が違えば null（チェックディジットは付け直す） */
+/**
+ * ISBN-10 → ISBN-13。
+ * 入力のチェックディジットが合わないものは null を返す。
+ * 黙って通すと「打ち間違いのISBN」から実在する別の本のISBN-13を作ってしまい、
+ * 見当違いの本の相場を表示することになるため。
+ */
 export function isbn10to13(s: string): string | null {
   const t = stripIsbn(s);
-  if (!/^\d{9}[\dX]$/.test(t)) return null;
+  if (!isValidIsbn10(t)) return null;
   const body = "978" + t.slice(0, 9);
   return body + isbn13CheckDigit(body);
 }

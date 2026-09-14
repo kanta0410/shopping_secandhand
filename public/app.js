@@ -39,6 +39,7 @@ const state = {
   data: null, // 直近の検索レスポンス
   hidden: new Set(), // クライアント側で非表示にしたソース
   lastQuery: null,
+  bookMode: "discount", // 本モードのランキング基準
 };
 
 /* ---------------- toast ---------------- */
@@ -71,6 +72,16 @@ for (const el of document.querySelectorAll(".mode")) {
         ? "書名かISBN（例: 金持ち父さん / 9784478004555）"
         : "欲しいものを入力（例: RTX 3060 / iPhone 13）";
     $("advanced").hidden = state.mode === "books";
+    $("book-mode").hidden = state.mode !== "books";
+  });
+}
+
+for (const el of document.querySelectorAll(".bm")) {
+  el.addEventListener("click", () => {
+    state.bookMode = el.dataset.bm;
+    for (const b of document.querySelectorAll(".bm")) b.classList.toggle("active", b === el);
+    // 押したのに何も起きないのが一番わかりにくいので、結果が出ている時はその場で並べ直す
+    if (state.data && state.mode === "books" && $("q").value.trim()) runSearch();
   });
 }
 
@@ -363,6 +374,7 @@ function currentAdvanced() {
     maxCondition: $("maxCondition").value,
     limit: $("limit").value,
     strict: $("strict").checked ? "1" : "0",
+    bookMode: state.bookMode,
   };
 }
 function buildSearchUrl(keyword, adv) {
@@ -376,7 +388,11 @@ function buildSearchUrl(keyword, adv) {
   return "/api/search?" + p.toString();
 }
 function buildBooksUrl(keyword, adv) {
-  const p = new URLSearchParams({ q: keyword, mode: "discount", limit: (adv && adv.limit) || "20" });
+  const p = new URLSearchParams({
+    q: keyword,
+    mode: (adv && adv.bookMode) || state.bookMode,
+    limit: (adv && adv.limit) || "20",
+  });
   return "/api/books?" + p.toString();
 }
 
@@ -562,6 +578,8 @@ function renderCards() {
 /* ---------------- render: books ---------------- */
 function renderBooks(data) {
   const deals = data.deals || [];
+  // サイト絞り込み・送料込みのみ・並び替えは商品モード専用。本モードでは押しても何も起きないので出さない
+  $("refine").hidden = true;
   const kw = state.lastQuery?.keyword ?? "";
   const watched = isWatched("books", kw);
   const all = deals.flatMap((d) => d.listings || []);

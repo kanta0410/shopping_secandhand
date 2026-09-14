@@ -1,6 +1,6 @@
 import { CONDITION_LABEL, type ConditionRank, type Listing } from "./types";
 
-/** 全角英数→半角、カタカナ全角化、小文字化。日本語ECのタイトル揺れを吸収する */
+/** 全角英数→半角、全角空白→半角、各種ダッシュ→ハイフン、小文字化。日本語ECのタイトル揺れを吸収する */
 export function normalizeText(s: string): string {
   return s
     .replace(/[Ａ-Ｚａ-ｚ０-９]/g, (c) => String.fromCharCode(c.charCodeAt(0) - 0xfee0))
@@ -16,11 +16,18 @@ export function tokenize(keyword: string): string[] {
     .filter((t) => t.length > 0);
 }
 
-/** タイトルに全トークンが含まれるか（AND マッチ）。ノイズ出品を落とすための関連度フィルタ */
+/**
+ * タイトルに全トークンが含まれるか（AND マッチ）。ノイズ出品を落とすための関連度フィルタ。
+ *
+ * 空白を除いた形でも突き合わせる理由:
+ *   利用者は「rtx3060」「iphone13」のように詰めて打つが、出品タイトルは「RTX 3060」と割れている。
+ *   素の包含判定だけだと正しい出品を黙って捨ててしまい、0件の理由が利用者に分からなくなる。
+ */
 export function matchesAllTokens(title: string, tokens: string[]): boolean {
   if (tokens.length === 0) return true;
   const t = normalizeText(title);
-  return tokens.every((tok) => t.includes(tok));
+  const packed = t.replace(/\s+/g, "");
+  return tokens.every((tok) => t.includes(tok) || packed.includes(tok.replace(/\s+/g, "")));
 }
 
 const NEW_HINTS = ["新品", "未使用", "未開封", "新品同様"];

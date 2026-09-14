@@ -39,6 +39,14 @@
       <button id="submit" type="submit"><span class="btn-label">さがす</span></button>
     </div>
 
+    <div id="book-mode" class="chiprow" hidden>
+      <span class="muted" style="font-size:12px;align-self:center">並べる基準:</span>
+      <button type="button" class="chip bm active" data-bm="discount">新品価格比で安い順</button>
+      <button type="button" class="chip bm" data-bm="gap">🔥 掘り出し物（相場から外れて安い）</button>
+      <button type="button" class="chip bm" data-bm="cheapest">単純に安い順</button>
+      <button type="button" class="chip bm" data-bm="supply">出品が多い（待てば下がる）</button>
+    </div>
+
     <div id="recent" class="chiprow" hidden></div>
 
     <details id="advanced" class="advanced">

@@ -1,9 +1,9 @@
 import { Hono } from "hono";
 import { buildDeepLinks } from "./deeplinks";
-import { percentile } from "./normalize";
+import { dedupe, percentile } from "./normalize";
 import { ALL_SOURCE_IDS, PROVIDERS, fanOut } from "./providers";
 import { mercariRawSearch } from "./providers/mercari";
-import { resolveBooks } from "./books/isbn";
+import { looksLikeIsbn, resolveBooks } from "./books/isbn";
 import { buildDeal, rankDeals, scoreDeal, type RankMode } from "./books/rank";
 import { fanOutBooks } from "./providers/books";
 import type { ConditionRank, Env, SearchQuery, SearchResponse, SourceId } from "./types";
@@ -175,6 +175,21 @@ app.get("/api/books", async (c) => {
     : "discount";
   const limit = Math.min(60, Math.max(1, Number.parseInt(c.req.query("limit") ?? "20", 10) || 20));
 
+  // スクレイピング先に同じリクエストを繰り返さないためのキャッシュ。
+  // 検索1回で「冊数 × 6サイト」叩くので、ここが無いと相手サイトへの負荷が跳ねる。
+  const ttl = Math.max(0, Number.parseInt(c.env.CACHE_TTL_SECONDS ?? "300", 10) || 0);
+  const cache = caches.default;
+  const cacheKey = new Request(
+    `https://chuko-hunter.internal/books?q=${encodeURIComponent(titles.join("\n"))}&mode=${mode}&limit=${limit}`,
+  );
+  if (ttl > 0 && c.req.query("nocache") !== "1") {
+    const hit = await cache.match(cacheKey);
+    if (hit) {
+      const body = (await hit.json()) as Record<string, unknown>;
+      return c.json({ ...body, cached: true, tookMs: Date.now() - t0 });
+    }
+  }
+
   const warnings: string[] = [];
 
   const handleTitle = async (title: string) => {
@@ -191,10 +206,41 @@ app.get("/api/books", async (c) => {
       listPrice: null,
       via: "未解決",
     };
-    const { listings, sources } = await fanOutBooks({ keyword: title, isbn: book.isbn13, limit }, c.env);
+    // 本の中古在庫はフリマ系（メルカリ等）に最も厚く積まれている。
+    // 書店系スクレイパだけを見ると母数の大半を取り落とすので、商品APIの3ソースも同時に叩く。
+    //
+    // キーワードの選び方:
+    //   - 書店系はISBNで正確に引ける（ISBNがあればそれを渡す）
+    //   - フリマ系はISBNで引くと空振りするため、書名で引く
+    //     ユーザーがISBNを直接入力した場合だけ、解決した書名に差し替える
+    const typedIsbn = looksLikeIsbn(title);
+    const goodsKeyword = typedIsbn ? book.title || title : title;
+    const goodsQuery: SearchQuery = {
+      keyword: goodsKeyword,
+      excludeKeyword: "",
+      minPrice: null,
+      maxPrice: null,
+      maxCondition: 0,
+      sources: ALL_SOURCE_IDS,
+      limitPerSource: limit,
+      // ユーザーが打った語ならタイトル一致で絞る。書誌から補完した長い書名で絞ると全部落ちるので緩める
+      strict: !typedIsbn,
+    };
+
+    const [shops, goods] = await Promise.all([
+      fanOutBooks({ keyword: title, isbn: book.isbn13, limit }, c.env),
+      fanOut(goodsQuery, c.env),
+    ]);
+
+    const sources = [...shops.sources, ...goods.sources];
     for (const s of sources) {
       if (s.error) warnings.push(`${s.sourceLabel}: ${s.error}`);
     }
+    // 両系統をまたいだ重複を落としてから実質価格で並べ直す
+    const listings = dedupe([...shops.listings, ...goods.listings]).sort(
+      (a, b) => a.effectivePrice - b.effectivePrice,
+    );
+
     const deal = buildDeal(book, listings, sources);
     return { ...deal, score: scoreDeal(deal) };
   };
@@ -212,12 +258,24 @@ app.get("/api/books", async (c) => {
 
   const ranked = rankDeals(results, mode).map((d) => ({ ...d, score: scoreDeal(d) }));
 
-  return c.json({
+  const payload = {
     mode,
     deals: ranked,
     warnings: [...new Set(warnings)].slice(0, 10),
     tookMs: Date.now() - t0,
-  });
+    cached: false,
+  };
+
+  // 1件も取れなかった結果をキャッシュすると、相手サイトの一時障害が5分間固定されてしまう
+  const gotSomething = ranked.some((d) => d.supply > 0);
+  if (ttl > 0 && gotSomething) {
+    const cacheable = new Response(JSON.stringify(payload), {
+      headers: { "Content-Type": "application/json", "Cache-Control": `public, max-age=${ttl}` },
+    });
+    c.executionCtx.waitUntil(cache.put(cacheKey, cacheable));
+  }
+
+  return c.json(payload);
 });
 
 app.get("/api/health", (c) => c.json({ ok: true, ts: new Date().toISOString() }));

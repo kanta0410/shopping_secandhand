@@ -15,6 +15,10 @@
   --shadow: 0 6px 24px rgba(0,0,0,.35);
 }
 * { box-sizing: border-box; }
+
+/* display を明示したクラス（.refine や .chiprow など）が UA標準の [hidden] を上書きしてしまい、
+   hidden を立てても消えない事故が起きる。JS 側は el.hidden で制御しているのでここで押し切る。 */
+[hidden] { display: none !important; }
 html { -webkit-text-size-adjust: 100%; }
 body {
   margin: 0;
@@ -258,3 +262,6 @@ button.ghost.danger { color: var(--bad); }
 }
 
 .callout.drop { border-color: var(--good); background: rgba(63,185,80,.08); }
+
+.chip.bm { font-size: 12px; padding: 5px 11px; }
+.chip.bm.active { border-color: var(--accent); background: var(--panel-2); color: var(--text); }

@@ -11,7 +11,9 @@
     "probe:mercari": "node scripts/probe.mjs mercari",
     "probe:sites": "node scripts/probe.mjs sites",
     "probe:books": "node scripts/probe.mjs books",
-    "probe:html": "node scripts/probe.mjs html"
+    "probe:html": "node scripts/probe.mjs html",
+    "test": "vitest run",
+    "test:watch": "vitest"
   },
   "dependencies": {
     "hono": "^4.13.7"
@@ -19,6 +21,7 @@
   "devDependencies": {
     "@cloudflare/workers-types": "^5.20260907.1",
     "typescript": "^5.7.3",
+    "vitest": "^5.0.0",
     "wrangler": "^4.129.1"
   }
 }
