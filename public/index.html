@@ -2,90 +2,157 @@
 <html lang="ja">
 <head>
 <meta charset="utf-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>中古ハンター — 中古品を横断して安い順に叩き出す</title>
-<meta name="description" content="メルカリ・Yahoo!ショッピング・楽天・ラクマ・ヤフオク・駿河屋を横断し、中古品を実質価格の安い順に一覧化する。" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>中古ハンター</title>
+<meta name="description" content="メルカリ・Yahoo!・楽天・駿河屋などの中古を横断検索。実質価格の安い順に並べ、値下がりを見張る。" />
+<meta name="theme-color" content="#0d1117" />
+<link rel="manifest" href="/manifest.webmanifest" />
 <link rel="stylesheet" href="/styles.css" />
-<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><text y='26' font-size='26'>🔎</text></svg>" />
+<link rel="icon" href="/icon.svg" />
+<link rel="apple-touch-icon" href="/icon.svg" />
 </head>
 <body>
+
 <header class="topbar">
-  <div class="wrap">
-    <h1>🔎 中古ハンター</h1>
-    <p class="tagline">中古を横断検索して<strong>実質価格（本体＋送料）の安い順</strong>に並べる。状態も一覧で見る。</p>
-    <p class="tagline"><a href="/books">📚 本を探すなら「中古本ランキング」へ →</a></p>
+  <div class="wrap bar">
+    <div class="brand"><span class="logo">🔎</span><span>中古ハンター</span></div>
+    <nav class="tabs" role="tablist">
+      <button class="tab active" data-tab="find" role="tab">さがす</button>
+      <button class="tab" data-tab="watch" role="tab">ウォッチ <span id="watch-count" class="pill" hidden>0</span></button>
+      <button class="tab" data-tab="setup" role="tab">設定</button>
+    </nav>
   </div>
 </header>
 
-<main class="wrap">
-  <form id="search-form" class="panel search">
-    <div class="row main-row">
-      <input id="q" name="q" type="search" placeholder="例: 金持ち父さん貧乏父さん / RTX 3060 / iPhone 13 128GB" autocomplete="off" required />
-      <button id="submit" type="submit">検索</button>
+<!-- ============ さがす ============ -->
+<main class="wrap panel-tab" id="tab-find">
+
+  <form id="search-form" class="hero">
+    <div class="modes" role="radiogroup" aria-label="検索モード">
+      <button type="button" class="mode active" data-mode="goods">🛒 商品をさがす</button>
+      <button type="button" class="mode" data-mode="books">📚 本をさがす</button>
     </div>
-    <div class="row filters">
-      <label>除外語 <input id="exclude" type="text" placeholder="ジャンク 部品取り" /></label>
-      <label>下限 <input id="minPrice" type="number" min="0" step="100" placeholder="0" /></label>
-      <label>上限 <input id="maxPrice" type="number" min="0" step="100" placeholder="上限なし" /></label>
-      <label>状態
-        <select id="maxCondition">
-          <option value="0">すべて</option>
-          <option value="1">新品・未使用のみ</option>
-          <option value="2">未使用に近い 以上</option>
-          <option value="3">目立った傷なし 以上</option>
-          <option value="4">やや傷あり 以上</option>
-          <option value="5">傷あり 以上</option>
-        </select>
-      </label>
-      <label>取得数/サイト
-        <select id="limit">
-          <option value="30">30</option>
-          <option value="50" selected>50</option>
-          <option value="100">100</option>
-        </select>
-      </label>
-      <label class="check"><input id="strict" type="checkbox" checked /> タイトル完全一致フィルタ</label>
+
+    <div class="searchrow">
+      <input id="q" type="search" autocomplete="off" required
+             placeholder="欲しいものを入力（例: 金持ち父さん / RTX 3060 / iPhone 13）" />
+      <button id="submit" type="submit"><span class="btn-label">さがす</span></button>
     </div>
-    <div id="source-toggles" class="row sources"></div>
+
+    <div id="recent" class="chiprow" hidden></div>
+
+    <details id="advanced" class="advanced">
+      <summary>詳細条件</summary>
+      <div class="advgrid">
+        <label>除外語<input id="exclude" type="text" placeholder="ジャンク 部品取り" /></label>
+        <label>下限<input id="minPrice" type="number" min="0" step="100" placeholder="なし" /></label>
+        <label>上限<input id="maxPrice" type="number" min="0" step="100" placeholder="なし" /></label>
+        <label>状態
+          <select id="maxCondition">
+            <option value="0">すべて</option>
+            <option value="2">未使用に近い 以上</option>
+            <option value="3">目立った傷なし 以上</option>
+            <option value="4">やや傷あり 以上</option>
+          </select>
+        </label>
+        <label>取得数
+          <select id="limit">
+            <option value="30">30</option>
+            <option value="50" selected>50</option>
+            <option value="100">100</option>
+          </select>
+        </label>
+        <label class="chk"><input id="strict" type="checkbox" checked /> 完全一致で絞る</label>
+      </div>
+    </details>
   </form>
 
-  <div id="setup" class="panel setup" hidden></div>
+  <div id="keyhint" class="callout" hidden></div>
 
-  <section id="stats" class="panel stats" hidden></section>
+  <!-- 検索中スケルトン -->
+  <div id="skeleton" hidden>
+    <div class="sk sk-stats"></div>
+    <div class="sk sk-card"></div><div class="sk sk-card"></div><div class="sk sk-card"></div>
+  </div>
 
-  <section id="deeplinks" class="panel deeplinks" hidden>
-    <h2>APIが無いサイトはワンクリックで横断</h2>
-    <p class="muted">下のボタンは「中古・価格が安い順」に設定済みの検索結果を新しいタブで開きます。</p>
-    <div id="deeplink-list" class="chips"></div>
+  <!-- 結果サマリー -->
+  <section id="summary" class="summary" hidden></section>
+
+  <!-- 絞り込み（クライアント側・即時） -->
+  <section id="refine" class="refine" hidden>
+    <div id="src-filter" class="chiprow"></div>
+    <div class="refine-right">
+      <label class="chk"><input id="only-shipping-included" type="checkbox" /> 送料込みのみ</label>
+      <label>並び
+        <select id="sort">
+          <option value="effective">実質価格が安い順</option>
+          <option value="price">本体価格が安い順</option>
+          <option value="net">ポイント差引後</option>
+          <option value="condition">状態が良い順</option>
+        </select>
+      </label>
+    </div>
+  </section>
+
+  <section id="results"></section>
+  <section id="deals"></section>
+
+  <section id="crosslinks" class="crosslinks" hidden>
+    <h2>ワンクリックで他サイトも見る</h2>
+    <p class="muted">「中古・安い順」に設定済みのページが開きます。</p>
+    <div id="crosslink-list" class="chiprow"></div>
     <button id="open-all" type="button" class="ghost">主要4サイトを一括で開く</button>
   </section>
 
-  <section id="results-section" hidden>
-    <div class="results-head">
-      <h2>取得結果 <span id="result-count" class="muted"></span></h2>
-      <div class="sortbar">
-        <label>並び替え
-          <select id="sort">
-            <option value="effective">実質価格が安い順</option>
-            <option value="price">本体価格が安い順</option>
-            <option value="net">ポイント差引後が安い順</option>
-            <option value="condition">状態が良い順</option>
-          </select>
-        </label>
-      </div>
-    </div>
-    <div id="results" class="results"></div>
-  </section>
-
-  <div id="empty" class="panel empty" hidden></div>
+  <div id="empty" class="callout" hidden></div>
 </main>
 
-<footer class="wrap footer">
-  <p class="muted">
-    価格・在庫は取得時点のもの。購入前に必ず出品ページで確認してください。
-    送料が「不明」の行は本体価格のみで並んでいるため、実際は順位が入れ替わることがあります。
-  </p>
-</footer>
+<!-- ============ ウォッチ ============ -->
+<main class="wrap panel-tab" id="tab-watch" hidden>
+  <div class="watch-head">
+    <div>
+      <h2>ウォッチリスト</h2>
+      <p class="muted">検索条件を保存しておくと、次に開いた時に<strong>前回からの値動き</strong>が出ます。</p>
+    </div>
+    <button id="check-all" type="button">全部チェック</button>
+  </div>
+  <div id="watch-drops" class="callout drop" hidden></div>
+  <div id="watch-progress" class="progress" hidden><div class="bar"></div><span class="ptxt"></span></div>
+  <div id="watch-list" class="watchlist"></div>
+  <div id="watch-empty" class="callout">
+    まだ何も見張っていません。「さがす」で検索して、結果の上にある <strong>☆ ウォッチする</strong> を押すと登録されます。
+  </div>
+</main>
+
+<!-- ============ 設定 ============ -->
+<main class="wrap panel-tab" id="tab-setup" hidden>
+  <section class="card">
+    <h2>データ源の状態</h2>
+    <div id="source-status" class="srcstatus"></div>
+  </section>
+  <section class="card" id="setup-guide"></section>
+  <section class="card">
+    <h2>保存データ</h2>
+    <p class="muted">ウォッチリストと検索履歴はこのブラウザの中だけに保存されます。サーバーには送られません。</p>
+    <div class="btnrow">
+      <button type="button" class="ghost" id="export">エクスポート（JSON）</button>
+      <button type="button" class="ghost" id="import">インポート</button>
+      <button type="button" class="ghost danger" id="wipe">全部消す</button>
+    </div>
+    <input type="file" id="importfile" accept="application/json" hidden />
+  </section>
+  <section class="card">
+    <h2>使い方のコツ</h2>
+    <ul class="tips">
+      <li><kbd>/</kbd> で検索欄にジャンプ、<kbd>Enter</kbd> で検索。</li>
+      <li>ホーム画面に追加するとアプリとして開けます（iOS: 共有 → ホーム画面に追加）。</li>
+      <li>🔥 バッジは「相場より明らかに安い」出品。中央値より40%以上安いものに付きます。</li>
+      <li>「送料不明」は本体価格だけで並んでいます。総額では順位が変わることがあります。</li>
+    </ul>
+  </section>
+</main>
+
+<div id="toast" class="toast" hidden></div>
 
 <script src="/app.js"></script>
 </body>
